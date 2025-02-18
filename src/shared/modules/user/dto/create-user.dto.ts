@@ -18,9 +18,6 @@ export class CreateUserDto {
   public email!: string;
 
   @IsString()
-  public avatar?: string;
-
-  @IsString()
   @MinLength(6, { message: UserMessages.password.minLength })
   @MaxLength(12, { message: UserMessages.password.maxLength })
   public password!: string;

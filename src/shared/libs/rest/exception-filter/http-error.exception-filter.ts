@@ -7,7 +7,6 @@ import { Logger } from '../../logger/index.js';
 import { HttpError } from '../errors/index.js';
 import { createErrorObject } from '../../../helpers/index.js';
 import { ApplicationError } from '../types/application-error.enum.js';
-
 @injectable()
 export class HttpErrorExceptionFilter implements ExceptionFilter {
   constructor(
@@ -20,9 +19,7 @@ export class HttpErrorExceptionFilter implements ExceptionFilter {
     if (!(error instanceof HttpError)) {
       return next(error);
     }
-
     this.logger.error(`[HttpErrorException]: ${req.path} # ${error.message}`, error);
-
     res
       .status(StatusCodes.BAD_REQUEST)
       .json(createErrorObject(ApplicationError.CommonError, error.message));

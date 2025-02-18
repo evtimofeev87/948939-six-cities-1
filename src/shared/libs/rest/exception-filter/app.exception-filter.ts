@@ -6,7 +6,6 @@ import { Logger } from '../../logger/index.js';
 import { Component } from '../../../types/index.js';
 import { createErrorObject } from '../../../helpers/index.js';
 import { ApplicationError } from '../types/application-error.enum.js';
-
 @injectable()
 export class AppExceptionFilter implements ExceptionFilter {
   constructor(

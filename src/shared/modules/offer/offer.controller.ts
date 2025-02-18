@@ -1,11 +1,10 @@
 import {
   BaseController,
-  HttpMethod,
-  ValidateObjectIdMiddleware,
-  ValidateDtoMiddleware,
   DocumentExistsMiddleware,
-  PrivateRouteMiddleware,
-  HttpError
+  HttpMethod,
+  PrivateRouteMiddleware, UploadFileMiddleware,
+  ValidateDtoMiddleware,
+  ValidateObjectIdMiddleware,
 } from '../../libs/rest/index.js';
 import { StatusCodes } from 'http-status-codes';
 import { inject, injectable } from 'inversify';
@@ -19,6 +18,9 @@ import { CommentService } from '../comment/index.js';
 import { CreateOfferDto } from './dto/create-offer.dto.js';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { UpdateOfferDto } from './dto/update-offer.dto.js';
+import { Config, RestSchema } from '../../libs/config/index.js';
+import { UploadImageRdo } from './rdo/upload-image.rdo.js';
+import { HttpError } from '../../libs/rest/index.js';
 
 type ParamOfferId = {
   offerId: string;
@@ -34,6 +36,7 @@ export default class OfferController extends BaseController {
     @inject(Component.Logger) protected logger: Logger,
     @inject(Component.OfferService) private readonly offerService: OfferService,
     @inject(Component.CommentService) private readonly commentService: CommentService,
+    @inject(Component.Config) private readonly configService: Config<RestSchema>,
   ) {
     super(logger);
 
@@ -111,6 +114,16 @@ export default class OfferController extends BaseController {
         new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId')
       ]
     });
+    this.addRoute({
+      path: '/:offerId/image',
+      method: HttpMethod.Post,
+      handler: this.uploadImage,
+      middlewares: [
+        new PrivateRouteMiddleware(),
+        new ValidateObjectIdMiddleware('offerId'),
+        new UploadFileMiddleware(this.configService.get('UPLOAD_DIRECTORY'), 'image'),
+      ]
+    });
   }
 
   public async createOffer({ body, tokenPayload }: Request<unknown, unknown, CreateOfferDto>, res: Response<OfferRdo>): Promise<void> {
@@ -181,5 +194,12 @@ export default class OfferController extends BaseController {
   public async deleteFavorite({ params, tokenPayload }: Request, res: Response): Promise<void> {
     await this.offerService.deleteFromFavorite(params.offerId, tokenPayload.id);
     this.ok(res, {});
+  }
+
+  public async uploadImage({ params, file } : Request<ParamOfferId>, res: Response) {
+    const { offerId } = params;
+    const updateDto = { previewImage: file?.filename };
+    await this.offerService.updateById(offerId, updateDto);
+    this.created(res, fillDTO(UploadImageRdo, updateDto));
   }
 }
